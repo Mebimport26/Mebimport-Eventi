@@ -2,373 +2,564 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Check-in Evento</title>
-<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
   :root {
-    --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c27; --border:#2a2a3a;
-    --accent:#6c63ff; --accent2:#a78bfa; --success:#22c55e; --success-bg:#052e16;
-    --warning:#f59e0b; --error:#ef4444; --error-bg:#2d0a0a;
-    --text:#f0f0f8; --text2:#8888aa;
-    --mono:'DM Mono',monospace; --sans:'DM Sans',sans-serif;
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a38;
+    --accent: #c8f060;
+    --accent-dim: #8aaa30;
+    --red: #ff4757;
+    --gold: #f5c842;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --success-bg: #0d1f0a;
+    --error-bg: #1f0a0a;
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
-  header{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:10}
-  .logo{display:flex;align-items:center;gap:10px}
-  .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.8)}}
-  .logo-text{font-size:15px;font-weight:600;letter-spacing:.5px}
-  .counter-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:var(--mono);font-size:13px;color:var(--text2)}
-  .counter-badge span{color:var(--accent2);font-weight:500}
-  #setup-screen{flex:1;padding:28px 20px;display:flex;flex-direction:column;gap:20px}
-  .setup-title{font-size:22px;font-weight:700;line-height:1.3}
-  .setup-title span{color:var(--accent2)}
-  .field-group{display:flex;flex-direction:column;gap:8px}
-  label{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2)}
-  input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 16px;font-family:var(--mono);font-size:13px;color:var(--text);width:100%;outline:none;transition:border-color .2s}
-  input:focus{border-color:var(--accent)}
-  input::placeholder{color:var(--text2)}
-  .hint{font-size:12px;color:var(--text2);line-height:1.5;background:var(--surface2);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0}
-  .hint b{color:var(--accent2)}
-  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:16px;font-family:var(--sans);font-size:16px;font-weight:600;width:100%;cursor:pointer;transition:opacity .2s;margin-top:6px}
-  .btn-primary:active{opacity:.85}
-  #scanner-screen{display:none;flex:1;flex-direction:column}
-  .scanner-area{position:relative;background:#000;width:100%;aspect-ratio:1;max-height:70vw;overflow:hidden}
-  video{width:100%;height:100%;object-fit:cover;display:block}
-  canvas#overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
-  .scan-frame-ui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .scan-frame{width:55%;aspect-ratio:1;position:relative}
-  .scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after{content:'';position:absolute;width:24px;height:24px;border-color:var(--accent2);border-style:solid}
-  .scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
-  .scan-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
-  .scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
-  .scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
-  .scan-line{position:absolute;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite}
-  @keyframes scanline{0%,100%{top:10%;opacity:.4}50%{top:88%;opacity:1}}
-  .scan-hint-bar{background:var(--surface);padding:12px 20px;font-size:13px;color:var(--text2);text-align:center;border-bottom:1px solid var(--border)}
-  .result-panel{flex:1;padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
-  .status-banner{border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;font-weight:600;font-size:15px}
-  .status-banner.success{background:var(--success-bg);border:1px solid var(--success);color:var(--success)}
-  .status-banner.error{background:var(--error-bg);border:1px solid var(--error);color:var(--error)}
-  .status-banner.loading{background:var(--surface2);border:1px solid var(--border);color:var(--text2)}
-  .status-banner.warning{background:rgba(245,158,11,.15);border:1px solid var(--warning);color:var(--warning)}
-  .client-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  .client-card-header{background:var(--surface2);padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border)}
-  .client-rows{padding:6px 0}
-  .client-row{display:flex;align-items:center;padding:11px 16px;gap:12px;border-bottom:1px solid var(--border)}
-  .client-row:last-child{border-bottom:none}
-  .row-icon{font-size:18px;flex-shrink:0;width:26px;text-align:center}
-  .row-body{flex:1;min-width:0}
-  .row-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
-  .row-value{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .row-value.mono{font-family:var(--mono);font-size:14px}
-  .tipo-badge{display:inline-block;border-radius:6px;font-size:11px;font-weight:700;padding:3px 10px;margin-left:4px}
-  .tipo-cliente{background:rgba(34,197,94,.15);border:1px solid var(--success);color:var(--success)}
-  .tipo-prospect{background:rgba(107,99,255,.15);border:1px solid var(--accent);color:var(--accent2)}
-  .accomp-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  .accomp-header{background:var(--surface2);padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .accomp-count{background:var(--accent);color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:600}
-  .accomp-list{padding:8px 16px;display:flex;flex-direction:column;gap:8px}
-  .accomp-tag{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px}
-  .accomp-tag button{margin-left:auto;background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer}
-  .accomp-add-row{display:flex;gap:8px;padding:8px 16px 14px}
-  .accomp-add-row input{flex:1;padding:10px 14px;font-size:14px}
-  .btn-add{background:var(--accent);border:none;border-radius:10px;padding:10px 16px;color:#fff;font-size:20px;cursor:pointer;flex-shrink:0}
-  .action-row{display:flex;gap:10px;padding:0 0 6px}
-  .btn-secondary{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer}
-  .btn-confirm{flex:2;background:var(--success);border:none;border-radius:12px;padding:14px;color:#fff;font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer}
-  .btn-confirm:disabled{opacity:.4;cursor:not-allowed}
-  .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .config-bar{background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text2)}
-  .config-bar button{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:4px 10px;cursor:pointer;font-family:var(--sans)}
-  .empty-state{text-align:center;color:var(--text2);padding:40px 20px;font-size:14px;line-height:1.8}
-  .empty-state .big{font-size:40px;display:block;margin-bottom:10px}
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.5;
+  }
+
+  header {
+    position: relative; z-index: 10;
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 22px; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .event-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
+  }
+  .counter-pill {
+    background: var(--accent); color: #0a0a0f;
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace;
+  }
+
+  main {
+    position: relative; z-index: 1;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 0;
+    max-height: calc(100vh - 73px);
+  }
+
+  .scanner-panel {
+    padding: 40px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 28px;
+    border-right: 1px solid var(--border);
+  }
+  .scanner-label {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 2px; color: var(--muted);
+  }
+  .scanner-frame { position: relative; width: 280px; height: 280px; }
+  .scanner-frame::before, .scanner-frame::after,
+  .scanner-frame .corner-tl, .scanner-frame .corner-br {
+    content: ''; position: absolute; width: 28px; height: 28px;
+    border-color: var(--accent); border-style: solid;
+  }
+  .scanner-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; }
+  .scanner-frame::after  { top: 0; right: 0; border-width: 3px 3px 0 0; }
+  .scanner-frame .corner-tl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+  .scanner-frame .corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+  #qr-reader { width: 280px !important; height: 280px !important; overflow: hidden; border-radius: 4px; }
+  #qr-reader video { border-radius: 4px; }
+  #qr-reader img { display: none !important; }
+  #qr-reader__dashboard { display: none !important; }
+
+  .scan-line {
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scan 2.5s ease-in-out infinite;
+    box-shadow: 0 0 12px var(--accent);
+  }
+  @keyframes scan {
+    0%   { top: 0; } 50% { top: 278px; } 100% { top: 0; }
+  }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; max-width: 280px;
+    color: var(--muted); font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .manual-input-row { display: flex; gap: 8px; width: 100%; max-width: 280px; }
+  .manual-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .manual-input:focus { border-color: var(--accent); }
+  .manual-input::placeholder { color: var(--muted); }
+  .btn-search {
+    background: var(--accent); color: #0a0a0f; border: none;
+    border-radius: 8px; padding: 10px 16px; font-weight: 600;
+    font-size: 13px; cursor: pointer; transition: opacity 0.2s; white-space: nowrap;
+  }
+  .btn-search:hover { opacity: 0.85; }
+
+  /* INFO PANEL */
+  .info-panel { display: flex; flex-direction: column; background: var(--surface); overflow-y: auto; }
+
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px; text-align: center; gap: 12px;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.3; margin-bottom: 8px; }
+  .empty-state h3 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--muted); font-weight: 400; }
+  .empty-state p { color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 220px; }
+
+  .guest-card { display: none; flex-direction: column; height: 100%; }
+  .guest-card.visible { display: flex; }
+
+  .guest-header { padding: 32px 32px 0; }
+  .guest-status-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
+  }
+  .tag-waiting { background: #1a1a08; border: 1px solid #4a4a20; color: var(--gold); }
+  .tag-done    { background: var(--success-bg); border: 1px solid #2a4a20; color: var(--accent); }
+  .tag-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .guest-name {
+    font-family: 'DM Serif Display', serif; font-size: 36px;
+    line-height: 1.1; letter-spacing: -1px; margin-bottom: 4px;
+  }
+  .guest-id { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  .guest-details { padding: 24px 32px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .detail-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; background: var(--surface2);
+    border-radius: 10px; border: 1px solid var(--border);
+  }
+  .detail-icon { font-size: 16px; width: 20px; text-align: center; }
+  .detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-family: 'DM Mono', monospace; }
+  .detail-value { font-size: 14px; color: var(--text); font-weight: 500; margin-top: 2px; }
+
+  .confirm-area { padding: 24px 32px 32px; border-top: 1px solid var(--border); }
+  .btn-checkin {
+    width: 100%; padding: 18px;
+    background: var(--accent); color: #0a0a0f; border: none;
+    border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; letter-spacing: -0.3px;
+  }
+  .btn-checkin:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,240,96,0.25); }
+  .btn-checkin:active { transform: translateY(0); }
+  .btn-checkin:disabled {
+    background: var(--surface2); color: var(--muted); cursor: default;
+    transform: none; box-shadow: none; border: 1px solid var(--border);
+  }
+  .btn-checkin.done-state {
+    background: var(--success-bg); color: var(--accent);
+    border: 1px solid var(--accent-dim); cursor: default; font-size: 14px;
+  }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 14px 24px; border-radius: 40px;
+    font-size: 14px; font-weight: 500; z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    opacity: 0; display: flex; align-items: center; gap: 10px;
+    backdrop-filter: blur(12px);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.success { background: #1a3a10; border: 1px solid var(--accent-dim); color: var(--accent); }
+  .toast.error   { background: var(--error-bg); border: 1px solid #5a1a1a; color: var(--red); }
+
+  @keyframes pulse-success {
+    0%   { box-shadow: 0 0 0 0 rgba(200,240,96,0.4); }
+    70%  { box-shadow: 0 0 0 20px rgba(200,240,96,0); }
+    100% { box-shadow: 0 0 0 0 rgba(200,240,96,0); }
+  }
+  .pulse { animation: pulse-success 0.6s ease-out; }
+
+  .recent-log { border-top: 1px solid var(--border); padding: 16px 32px; background: var(--bg); display: none; }
+  .recent-log.has-items { display: block; }
+  .log-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-family: 'DM Mono', monospace; margin-bottom: 10px; }
+  .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 130px; overflow-y: auto; }
+  .log-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: var(--surface2);
+    border-radius: 8px; font-size: 12px; border-left: 3px solid var(--accent);
+  }
+  .log-item .log-name { font-weight: 500; }
+  .log-item .log-time { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .scanner-panel { padding: 24px; border-right: none; border-bottom: 1px solid var(--border); }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo"><div class="logo-dot"></div><span class="logo-text">Check-in Desk</span></div>
-  <div class="counter-badge">✓ <span id="counter">0</span></div>
+  <div class="logo">check<span>·</span>in</div>
+  <div class="event-badge">AGRO.GE.PA.CIOK 2026</div>
+  <div class="counter-pill" id="counter">0 ingressi</div>
 </header>
 
-<div id="setup-screen">
-  <div>
-    <h1 class="setup-title">Configura il <span>lettore</span></h1>
-    <p style="font-size:14px;color:var(--text2);margin-top:8px">Inserisci l'URL del Google Apps Script.</p>
+<main>
+  <!-- SCANNER -->
+  <div class="scanner-panel">
+    <div class="scanner-label">Inquadra il QR dell'ospite</div>
+    <div class="scanner-frame">
+      <div id="qr-reader"></div>
+      <div class="scan-line"></div>
+      <div class="corner-tl"></div>
+      <div class="corner-br"></div>
+    </div>
+    <div class="divider">oppure inserisci manuale</div>
+    <div class="manual-input-row">
+      <input type="text" class="manual-input" id="manual-id" placeholder="MEB-261027-1415 o telefono" autocomplete="off">
+      <button class="btn-search" onclick="handleScan(document.getElementById('manual-id').value.trim())">Cerca →</button>
+    </div>
   </div>
-  <div class="field-group">
-    <label>URL Google Apps Script</label>
-    <input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off" spellcheck="false">
-    <div class="hint"><b>Come ottenerlo:</b> Google Sheet → Estensioni → Apps Script → Distribuisci → App web → copia URL</div>
-  </div>
-  <div class="field-group">
-    <label>Nome operatore (opzionale)</label>
-    <input type="text" id="operator-name" placeholder="es. Mario">
-  </div>
-  <button class="btn-primary" onclick="startScanner()">▶ Avvia scanner</button>
-</div>
 
-<div id="scanner-screen">
-  <div class="scanner-area">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="overlay"></canvas>
-    <div class="scan-frame-ui"><div class="scan-frame"><span></span><div class="scan-line"></div></div></div>
+  <!-- INFO PANEL -->
+  <div class="info-panel">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🎟️</div>
+      <h3>In attesa di scansione</h3>
+      <p>Inquadra il QR del biglietto o inserisci ID / telefono per il check-in.</p>
+    </div>
+
+    <div class="guest-card" id="guest-card">
+      <div class="guest-header">
+        <div class="guest-status-tag tag-waiting" id="status-tag">
+          <span class="tag-dot"></span>
+          <span id="status-label">In attesa</span>
+        </div>
+        <div class="guest-name" id="guest-name">—</div>
+        <div class="guest-id" id="guest-id">—</div>
+      </div>
+
+      <div class="guest-details">
+        <div class="detail-row">
+          <div class="detail-icon">📱</div>
+          <div class="detail-content">
+            <div class="detail-label">Telefono</div>
+            <div class="detail-value" id="detail-phone">—</div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">🏢</div>
+          <div class="detail-content">
+            <div class="detail-label">P.IVA</div>
+            <div class="detail-value" id="detail-piva">—</div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">🕐</div>
+          <div class="detail-content">
+            <div class="detail-label">Confermato il</div>
+            <div class="detail-value" id="detail-date">—</div>
+          </div>
+        </div>
+        <div class="detail-row" id="checkin-time-row" style="display:none;">
+          <div class="detail-icon">✅</div>
+          <div class="detail-content">
+            <div class="detail-label">Check-in effettuato alle</div>
+            <div class="detail-value" id="detail-checkin-time">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-area">
+        <button class="btn-checkin" id="btn-checkin" onclick="doCheckIn()">
+          ✓ Conferma ingresso
+        </button>
+      </div>
+
+      <div class="recent-log" id="recent-log">
+        <div class="log-title">Ultimi check-in</div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+    </div>
   </div>
-  <div class="scan-hint-bar" id="scan-status-bar">📷 Inquadra il QR code del cliente</div>
-  <div class="result-panel" id="result-panel">
-    <div class="empty-state"><span class="big">🎫</span>Scansiona un QR code<br>per visualizzare i dati del cliente</div>
-  </div>
-  <div class="config-bar">
-    <span id="gas-url-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">—</span>
-    <button onclick="resetConfig()">⚙ Impostazioni</button>
-  </div>
-</div>
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-let gasUrl = '', operatorName = '', checkinCount = 0;
-let isProcessing = false, currentData = null, accompaniers = [];
-let animFrame = null, stream = null;
-const video = document.getElementById('video');
-const canvas = document.getElementById('overlay');
-const ctx = canvas.getContext('2d');
+  // ─── CONFIGURAZIONE ───────────────────────────────────────────────
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+  const TOKEN = '';        // deve coincidere con TOKEN nello Apps Script (se lo usi)
+  const DEMO_MODE = false; // true SOLO per provare l'interfaccia senza backend
+  // ─────────────────────────────────────────────────────────────────
 
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('checkin_gas_url');
-  const savedOp = localStorage.getItem('checkin_operator');
-  if (saved) document.getElementById('gas-url').value = saved;
-  if (savedOp) document.getElementById('operator-name').value = savedOp;
-  checkinCount = parseInt(localStorage.getItem('checkin_count') || '0');
-  document.getElementById('counter').textContent = checkinCount;
-});
+  let currentGuest = null;
+  let checkinCount = 0;
+  let recentLog = [];
+  let lastScanned = null;
+  let scanCooldown = false;
+  let busy = false;
 
-function startScanner() {
-  gasUrl = document.getElementById('gas-url').value.trim();
-  operatorName = document.getElementById('operator-name').value.trim();
-  if (!gasUrl) { alert('Inserisci l\'URL del Google Apps Script.'); return; }
-  localStorage.setItem('checkin_gas_url', gasUrl);
-  localStorage.setItem('checkin_operator', operatorName);
-  document.getElementById('setup-screen').style.display = 'none';
-  const ss = document.getElementById('scanner-screen');
-  ss.style.display = 'flex';
-  document.getElementById('gas-url-label').textContent = gasUrl.length > 50 ? gasUrl.slice(0,50)+'…' : gasUrl;
-  initCamera();
-}
+  // ─── PARSER DEL QR ───────────────────────────────────────────────
+  // Payload atteso (testo multilinea):
+  //   ID: MEB-261027-1415
+  //   Nome: Renna
+  //   Tel: 3929930154
+  //   P.IVA: 00000000000
+  // Accetta anche input manuale: un ID (MEB-...) oppure un numero di telefono.
+  function parsePayload(raw) {
+    raw = String(raw || '').trim();
+    const get = (label) => {
+      const m = raw.match(new RegExp('^\\s*' + label + '\\s*:\\s*(.+?)\\s*$', 'im'));
+      return m ? m[1].trim() : '';
+    };
+    const id = get('ID');
+    const nome = get('Nome');
+    const tel = get('Tel');
+    const piva = get('P\\.?\\s*IVA');
+    if (id || tel) return { id: id.toUpperCase(), nome, tel, piva };
 
-function resetConfig() {
-  stopCamera();
-  document.getElementById('scanner-screen').style.display = 'none';
-  document.getElementById('setup-screen').style.display = 'flex';
-  showEmptyState();
-}
-
-function stopCamera() {
-  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-}
-
-async function initCamera() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    video.srcObject = stream;
-    video.addEventListener('loadedmetadata', () => {
-      video.play();
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      setStatusBar('📷 Fotocamera attiva — inquadra il QR', '');
-      scanLoop();
-    });
-  } catch(err) {
-    setStatusBar('❌ Errore fotocamera: ' + err.message, 'error');
-    alert('Errore fotocamera: ' + err.message);
+    // Input manuale
+    if (/^MEB-/i.test(raw)) return { id: raw.toUpperCase(), nome: '', tel: '', piva: '' };
+    return { id: '', nome: '', tel: raw, piva: '' };
   }
-}
 
-function scanLoop() {
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: 'dontInvert'
-    });
-    if (code && !isProcessing) {
-      onScanSuccess(code.data);
-    }
-  }
-  animFrame = requestAnimationFrame(scanLoop);
-}
-
-async function onScanSuccess(decodedText) {
-  if (isProcessing) return;
-  const text = decodedText.trim().replace(/[\u200B\u200C\u200D\uFEFF]/g, '');
-  if (!text.startsWith('EVT-')) {
-    return; // ignora silenziosa QR non nostri
-  }
-  const phone = text.slice(4).trim();
-  if (!phone) return;
-
-  isProcessing = true;
-  accompaniers = [];
-  currentData = null;
-  setStatusBar('<span class="spinner"></span> Ricerca cliente…', 'loading');
-  showLoadingCard(phone);
-
-  try {
-    const url = gasUrl + '?action=lookup&phone=' + encodeURIComponent(phone);
-    const res = await fetch(url);
+  // ─── API ─────────────────────────────────────────────────────────
+  async function api(params) {
+    const qs = new URLSearchParams(Object.assign({}, params, { token: TOKEN }));
+    const res = await fetch(APPS_SCRIPT_URL + '?' + qs.toString());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    if (data.error) {
-      setStatusBar('❌ ' + data.error, 'error');
-      showErrorCard(data.error, phone);
-      isProcessing = false;
+    if (data.error) throw new Error(data.error);
+    return data;
+  }
+
+  // ─── QR SCANNER ──────────────────────────────────────────────────
+  const html5QrCode = new Html5Qrcode("qr-reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 240, height: 240 } },
+    (decodedText) => {
+      if (scanCooldown || decodedText === lastScanned) return;
+      lastScanned = decodedText;
+      scanCooldown = true;
+      setTimeout(() => { scanCooldown = false; lastScanned = null; }, 3000);
+      handleScan(decodedText);
+    },
+    () => {}
+  ).catch(() => {
+    showToast('Fotocamera non disponibile: usa l\'inserimento manuale', 'error');
+  });
+
+  // ─── HANDLE SCAN ─────────────────────────────────────────────────
+  async function handleScan(raw) {
+    if (!raw || busy) return;
+    const p = parsePayload(raw);
+    const digits = p.tel.replace(/\D/g, '');
+    if (!p.id && digits.length < 8) {
+      showToast('Codice non valido. Riprova.', 'error');
       return;
     }
-    currentData = { ...data, phone };
-    renderClientCard(data, phone);
-    setStatusBar(data.status === 'Confermato' ? '⚠️ Cliente già registrato' : '✅ Cliente trovato — conferma presenza',
-                 data.status === 'Confermato' ? 'warning' : 'success');
-  } catch(e) {
-    setStatusBar('❌ Errore: ' + e.message, 'error');
-    showErrorCard('Impossibile contattare il server: ' + e.message, phone);
-    isProcessing = false;
-  }
-}
 
-function setStatusBar(html, type) {
-  const bar = document.getElementById('scan-status-bar');
-  bar.innerHTML = html;
-  const colors = { error:'rgba(239,68,68,.15)', success:'rgba(34,197,94,.15)', warning:'rgba(245,158,11,.15)' };
-  const texts  = { error:'var(--error)', success:'var(--success)', warning:'var(--warning)' };
-  bar.style.background = colors[type] || '';
-  bar.style.color = texts[type] || 'var(--text2)';
-}
-
-function showEmptyState() {
-  document.getElementById('result-panel').innerHTML =
-    '<div class="empty-state"><span class="big">🎫</span>Scansiona un QR code<br>per visualizzare i dati del cliente</div>';
-}
-
-function showLoadingCard(phone) {
-  document.getElementById('result-panel').innerHTML =
-    '<div class="status-banner loading"><span>⏳</span><span>Ricerca <span style="font-family:var(--mono)">' + phone + '</span>…</span></div>';
-}
-
-function showErrorCard(msg, phone) {
-  document.getElementById('result-panel').innerHTML =
-    '<div class="status-banner error"><span>❌</span><div><div>' + msg + '</div><div style="font-size:12px;margin-top:4px;font-family:var(--mono)">' + phone + '</div></div></div>' +
-    '<div class="action-row"><button class="btn-secondary" onclick="resumeScan()">🔄 Nuova scansione</button></div>';
-}
-
-function renderClientCard(data, phone) {
-  const alreadyBadge = data.status === 'Confermato'
-    ? '<span style="background:rgba(245,158,11,.15);border:1px solid var(--warning);color:var(--warning);border-radius:6px;font-size:11px;font-weight:700;padding:2px 8px;margin-left:8px">GIÀ REGISTRATO</span>' : '';
-  const tipoBadge = data.tipo
-    ? '<span class="tipo-badge ' + (data.tipo.toLowerCase().includes('cliente') ? 'tipo-cliente' : 'tipo-prospect') + '">' + data.tipo + '</span>' : '';
-
-  document.getElementById('result-panel').innerHTML =
-    '<div class="status-banner ' + (data.status === 'Confermato' ? 'warning' : 'success') + '">' +
-      '<span>' + (data.status === 'Confermato' ? '⚠️' : '✅') + '</span>' +
-      '<div><div>' + (data.status === 'Confermato' ? 'Già registrato' : 'Cliente trovato') + alreadyBadge + '</div>' +
-      '<div style="font-size:12px;font-weight:400;margin-top:2px;opacity:.8">Riga ' + data.row + '</div></div></div>' +
-    '<div class="client-card"><div class="client-card-header">Dati ospite</div><div class="client-rows">' +
-      '<div class="client-row"><div class="row-icon">👤</div><div class="row-body"><div class="row-label">Nome</div><div class="row-value">' + (data.name||'—') + tipoBadge + '</div></div></div>' +
-      '<div class="client-row"><div class="row-icon">📱</div><div class="row-body"><div class="row-label">Telefono</div><div class="row-value mono">' + phone + '</div></div></div>' +
-      (data.email ? '<div class="client-row"><div class="row-icon">✉️</div><div class="row-body"><div class="row-label">Email</div><div class="row-value">' + data.email + '</div></div></div>' : '') +
-      (data.extra ? '<div class="client-row"><div class="row-icon">📋</div><div class="row-body"><div class="row-label">Note</div><div class="row-value">' + data.extra + '</div></div></div>' : '') +
-    '</div></div>' +
-    '<div class="accomp-section">' +
-      '<div class="accomp-header">Accompagnatori <span class="accomp-count" id="accomp-count">0</span></div>' +
-      '<div class="accomp-list" id="accomp-list"></div>' +
-      '<div class="accomp-add-row"><input type="text" id="accomp-input" placeholder="Nome accompagnatore…" onkeydown="if(event.key===\'Enter\')addAccomp()"><button class="btn-add" onclick="addAccomp()">+</button></div>' +
-    '</div>' +
-    '<div class="action-row">' +
-      '<button class="btn-secondary" onclick="resumeScan()">✕ Annulla</button>' +
-      '<button class="btn-confirm" id="btn-confirm" onclick="confirmCheckin()">' + (data.status === 'Confermato' ? '⚠️ Ri-registra' : '✔ Conferma arrivo') + '</button>' +
-    '</div>';
-}
-
-function addAccomp() {
-  const inp = document.getElementById('accomp-input');
-  const name = inp.value.trim();
-  if (!name) return;
-  accompaniers.push(name);
-  inp.value = '';
-  inp.focus();
-  renderAccompList();
-}
-
-function removeAccomp(i) { accompaniers.splice(i,1); renderAccompList(); }
-
-function renderAccompList() {
-  const list = document.getElementById('accomp-list');
-  const count = document.getElementById('accomp-count');
-  if (!list) return;
-  count.textContent = accompaniers.length;
-  list.innerHTML = accompaniers.map((n,i) =>
-    '<div class="accomp-tag"><span>👤</span><span>' + n + '</span><button onclick="removeAccomp('+i+')">×</button></div>'
-  ).join('');
-}
-
-async function confirmCheckin() {
-  if (!currentData) return;
-  const btn = document.getElementById('btn-confirm');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Aggiornamento…';
-  try {
-    const res = await fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action:'checkin', phone:currentData.phone, row:currentData.row, operator:operatorName, accompaniers })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.ok) {
-      checkinCount++;
-      localStorage.setItem('checkin_count', checkinCount);
-      document.getElementById('counter').textContent = checkinCount;
-      setStatusBar('🎉 Check-in completato!', 'success');
-      showSuccessCard(currentData.name || currentData.phone, accompaniers);
-      currentData = null;
-    } else {
-      btn.disabled = false;
-      btn.textContent = '⚠ Riprova';
-      setStatusBar('❌ ' + (data.error||'Errore sconosciuto'), 'error');
+    busy = true;
+    showToast('🔍 Ricerca in corso…', 'success');
+    try {
+      const data = await api({ action: 'lookup', id: p.id, phone: p.tel });
+      if (!data.found) {
+        showToast('❌ Ospite non trovato nel registro', 'error');
+        showNotFound(p);
+        return;
+      }
+      renderGuest(data);
+    } catch (e) {
+      if (DEMO_MODE) {
+        renderGuest({ found: true, id: p.id || 'MEB-DEMO', nome: p.nome || 'Ospite demo',
+          telefono: p.tel, piva: p.piva, dataConferma: '—', stato: 'In attesa', checkinTime: null });
+      } else {
+        showToast('⚠️ Errore di connessione: riprova la scansione', 'error');
+      }
+    } finally {
+      busy = false;
     }
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '⚠ Riprova';
-    setStatusBar('❌ Errore: ' + e.message, 'error');
   }
-}
 
-function showSuccessCard(name, accomp) {
-  document.getElementById('result-panel').innerHTML =
-    '<div class="status-banner success"><span>🎉</span><div>' +
-      '<div style="font-size:17px">Check-in completato!</div>' +
-      '<div style="font-size:13px;font-weight:400;margin-top:2px">' + name +
-      (accomp.length ? ' + ' + accomp.length + ' accompagnator' + (accomp.length===1?'e':'i') : '') + '</div>' +
-    '</div></div>' +
-    (accomp.length ? '<div class="client-card"><div class="client-card-header">Accompagnatori</div><div class="client-rows">' +
-      accomp.map(a=>'<div class="client-row"><div class="row-icon">👤</div><div class="row-body"><div class="row-value">'+a+'</div></div></div>').join('') +
-      '</div></div>' : '') +
-    '<div class="action-row"><button class="btn-primary" style="margin-top:0" onclick="resumeScan()">▶ Prossimo cliente</button></div>';
-  setTimeout(() => resumeScan(), 8000);
-}
+  // ─── OSPITE NON TROVATO ──────────────────────────────────────────
+  function showNotFound(p) {
+    currentGuest = null;
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('guest-card').classList.add('visible');
 
-function resumeScan() {
-  currentData = null; accompaniers = []; isProcessing = false;
-  setStatusBar('📷 Fotocamera attiva — inquadra il QR', '');
-  showEmptyState();
-}
+    document.getElementById('guest-name').textContent = p.nome || 'Ospite non trovato';
+    document.getElementById('guest-id').textContent = p.id || p.tel;
+    document.getElementById('detail-phone').textContent = p.tel || '—';
+    document.getElementById('detail-piva').textContent = p.piva || '—';
+    document.getElementById('detail-date').textContent = '—';
+    document.getElementById('checkin-time-row').style.display = 'none';
+
+    const tag = document.getElementById('status-tag');
+    tag.className = 'guest-status-tag';
+    tag.style.background = '#1f0a0a';
+    tag.style.border = '1px solid #5a1a1a';
+    tag.style.color = '#ff4757';
+    document.getElementById('status-label').textContent = 'Non registrato';
+
+    const btn = document.getElementById('btn-checkin');
+    btn.disabled = true;
+    btn.className = 'btn-checkin';
+    btn.textContent = '✗ Nessun ospite trovato';
+  }
+
+  // ─── RENDER GUEST ────────────────────────────────────────────────
+  function renderGuest(data) {
+    currentGuest = data;
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('guest-card').classList.add('visible');
+
+    document.getElementById('guest-name').textContent = data.nome;
+    document.getElementById('guest-id').textContent = data.id;
+    document.getElementById('detail-phone').textContent = data.telefono || '—';
+    document.getElementById('detail-piva').textContent = data.piva || '—';
+    document.getElementById('detail-date').textContent = data.dataConferma || '—';
+
+    const tag = document.getElementById('status-tag');
+    tag.removeAttribute('style');
+    const label = document.getElementById('status-label');
+    const btn = document.getElementById('btn-checkin');
+    const checkinRow = document.getElementById('checkin-time-row');
+
+    if (String(data.stato).includes('Arrivato')) {
+      tag.className = 'guest-status-tag tag-done';
+      label.textContent = 'Già registrato';
+      btn.disabled = true;
+      btn.className = 'btn-checkin done-state';
+      btn.textContent = '✅ Check-in già effettuato';
+      if (data.checkinTime) {
+        document.getElementById('detail-checkin-time').textContent = data.checkinTime;
+        checkinRow.style.display = 'flex';
+      } else {
+        checkinRow.style.display = 'none';
+      }
+    } else {
+      tag.className = 'guest-status-tag tag-waiting';
+      label.textContent = 'In attesa';
+      btn.disabled = false;
+      btn.className = 'btn-checkin';
+      btn.textContent = '✓ Conferma ingresso';
+      checkinRow.style.display = 'none';
+    }
+  }
+
+  // ─── CHECK-IN ────────────────────────────────────────────────────
+  async function doCheckIn() {
+    if (!currentGuest || busy) return;
+    const guest = currentGuest;
+    const btn = document.getElementById('btn-checkin');
+    btn.textContent = '⏳ Registrazione…';
+    btn.disabled = true;
+    busy = true;
+
+    try {
+      let res;
+      if (DEMO_MODE) {
+        res = { success: true, checkinTime: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) };
+      } else {
+        res = await api({ action: 'checkin', id: guest.id });
+      }
+
+      if (!res.success) {
+        if (res.alreadyCheckedIn) {
+          showToast('⚠️ Check-in già effettuato' + (res.checkinTime ? ' alle ' + res.checkinTime : ''), 'error');
+          btn.className = 'btn-checkin done-state';
+          btn.textContent = '✅ Check-in già effettuato';
+        } else {
+          showToast('❌ Check-in non registrato: riprova', 'error');
+          btn.disabled = false;
+          btn.textContent = '✓ Conferma ingresso';
+        }
+        return;
+      }
+
+      const timeStr = res.checkinTime;
+      checkinCount++;
+      document.getElementById('counter').textContent = checkinCount + ' ingressi';
+      document.getElementById('status-tag').className = 'guest-status-tag tag-done';
+      document.getElementById('status-label').textContent = 'Arrivato';
+      btn.className = 'btn-checkin done-state pulse';
+      btn.textContent = '✅ Check-in effettuato';
+      document.getElementById('detail-checkin-time').textContent = timeStr;
+      document.getElementById('checkin-time-row').style.display = 'flex';
+
+      showToast('✅ ' + guest.nome + ' — ingresso alle ' + timeStr, 'success');
+      addToLog(guest.nome, timeStr);
+      currentGuest = null;
+    } catch (e) {
+      showToast('⚠️ Errore di connessione: check-in NON registrato', 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Conferma ingresso';
+    } finally {
+      busy = false;
+    }
+  }
+
+  // ─── LOG ─────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function addToLog(nome, time) {
+    recentLog.unshift({ nome, time });
+    if (recentLog.length > 5) recentLog.pop();
+    document.getElementById('recent-log').classList.add('has-items');
+    document.getElementById('log-list').innerHTML = recentLog.map(e =>
+      '<div class="log-item"><span class="log-name">✓ ' + esc(e.nome) + '</span><span class="log-time">' + esc(e.time) + '</span></div>'
+    ).join('');
+  }
+
+  // ─── TOAST ───────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || 'success') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.className = 'toast', 3500);
+  }
+
+  document.getElementById('manual-id').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleScan(e.target.value.trim());
+  });
 </script>
 </body>
 </html>
