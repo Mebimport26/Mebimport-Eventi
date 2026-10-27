@@ -357,6 +357,14 @@
     return { id: '', nome: '', tel: raw, piva: '' };
   }
 
+  function errMsg(e) {
+    console.error(e);
+    if (e && e.name === 'TypeError') return 'Script non raggiungibile: controlla APPS_SCRIPT_URL e l\'accesso "Chiunque" del deploy';
+    if (e && /^HTTP /.test(e.message)) return 'Risposta del server non valida (' + e.message + '): URL del deploy errato?';
+    if (e && e.name === 'SyntaxError') return 'Lo script non ha risposto in JSON: URL errato o deploy non pubblico';
+    return 'Errore script: ' + (e && e.message ? e.message : e);
+  }
+
   // ─── API ─────────────────────────────────────────────────────────
   async function api(params) {
     const qs = new URLSearchParams(Object.assign({}, params, { token: TOKEN }));
@@ -409,7 +417,7 @@
         renderGuest({ found: true, id: p.id || 'MEB-DEMO', nome: p.nome || 'Ospite demo',
           telefono: p.tel, piva: p.piva, dataConferma: '—', stato: 'In attesa', checkinTime: null });
       } else {
-        showToast('⚠️ Errore di connessione: riprova la scansione', 'error');
+        showToast('⚠️ ' + errMsg(e), 'error');
       }
     } finally {
       busy = false;
@@ -526,7 +534,7 @@
       addToLog(guest.nome, timeStr);
       currentGuest = null;
     } catch (e) {
-      showToast('⚠️ Errore di connessione: check-in NON registrato', 'error');
+      showToast('⚠️ Check-in NON registrato. ' + errMsg(e), 'error');
       btn.disabled = false;
       btn.textContent = '✓ Conferma ingresso';
     } finally {
@@ -554,7 +562,7 @@
     t.textContent = msg;
     t.className = 'toast ' + (type || 'success') + ' show';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.className = 'toast', 3500);
+    toastTimer = setTimeout(() => t.className = 'toast', type === 'error' ? 8000 : 3500);
   }
 
   document.getElementById('manual-id').addEventListener('keydown', e => {
